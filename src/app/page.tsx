@@ -1,17 +1,14 @@
-import Link from 'next/link'
+import Dashboard from '../ui/Dashboard';
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-      <div className="bg-white p-8 rounded-lg shadow-md">
-        <h1 className="text-3xl font-bold mb-4">Welcome to Huynh Analytics</h1>
-        <Link 
-          href="/dashboard"
-          className="inline-block bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 transition-colors"
-        >
-          Go to Dashboard
-        </Link>
+    <main className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <h1 className="text-4xl font-bold text-gray-900 mb-8">
+          Welcome to Huynh Analytics
+        </h1>
+        <Dashboard />
       </div>
-    </div>
-  )
+    </main>
+  );
 } 
