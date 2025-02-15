@@ -102,6 +102,30 @@ A component that tracks when elements become visible in the viewport.
 </TrackVisibility>
 ```
 
+### Dashboard
+
+A real-time monitoring dashboard that provides insights into your system's performance, A/B tests, and analytics events.
+
+```tsx
+import { Dashboard } from 'copywriting-analytics-package';
+
+function App() {
+  return (
+    <div>
+      <Dashboard />
+    </div>
+  );
+}
+```
+
+Features:
+- Real-time metrics overview
+- Active A/B test monitoring
+- Event log tracking
+- System health indicators
+- Auto-refreshing data every 2 seconds
+- Responsive layout with Tailwind CSS
+
 ## Copy Replacement Rules
 
 Create a JSON file with your copy replacement rules:
