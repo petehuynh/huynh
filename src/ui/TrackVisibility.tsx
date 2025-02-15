@@ -39,14 +39,13 @@ const TrackVisibility: React.FC<TrackVisibilityProps> = ({
     );
 
     if (elementRef.current) {
-      observer.observe(elementRef.current);
-    }
+      const element = elementRef.current;
+      observer.observe(element);
 
-    return () => {
-      if (elementRef.current) {
-        observer.unobserve(elementRef.current);
-      }
-    };
+      return () => {
+        observer.unobserve(element);
+      };
+    }
   }, [threshold, testId, onVisible]);
 
   return (

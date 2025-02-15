@@ -1,8 +1,8 @@
 import mixpanel from 'mixpanel-browser';
 import { v4 as uuidv4 } from 'uuid';
-import type { AnalyticsEvent, CopyAnalyticsConfig } from '../types';
+import type { AnalyticsEvent, CopyAnalyticsConfig, AnalyticsTrackerInterface } from '../types';
 
-class AnalyticsTracker {
+class AnalyticsTracker implements AnalyticsTrackerInterface {
   private static instance: AnalyticsTracker;
   private provider: string;
   private config: CopyAnalyticsConfig;
@@ -39,14 +39,18 @@ class AnalyticsTracker {
           document.head.appendChild(script);
 
           window.dataLayer = window.dataLayer || [];
-          window.gtag = function() {
-            window.dataLayer.push(arguments);
+          window.gtag = function(...args) {
+            window.dataLayer.push(args);
           };
           window.gtag('js', new Date());
           window.gtag('config', this.config.providerConfig.apiKey);
         }
         break;
     }
+  }
+
+  public getEventQueue(): AnalyticsEvent[] {
+    return this.eventQueue;
   }
 
   public trackEvent(event: Omit<AnalyticsEvent, 'timestamp'>): void {
@@ -82,10 +86,6 @@ class AnalyticsTracker {
         }
         break;
     }
-  }
-
-  public getEventQueue(): AnalyticsEvent[] {
-    return [...this.eventQueue];
   }
 
   public clearEventQueue(): void {

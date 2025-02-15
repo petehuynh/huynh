@@ -1,10 +1,10 @@
 import { v4 as uuidv4 } from 'uuid';
-import type { ABTestConfig, ABTestResult } from '../types';
+import type { ABTestConfig, ABTestResult, ABTest, ABTestingInterface } from '../types';
 import AnalyticsTracker from './analyticsTracker';
 
-class ABTesting {
+class ABTesting implements ABTestingInterface {
   private static instance: ABTesting;
-  private tests: Map<string, ABTestConfig> = new Map();
+  private tests: Map<string, ABTest> = new Map();
   private results: Map<string, ABTestResult> = new Map();
   private userAssignments: Map<string, string> = new Map();
   private readonly storageKey = 'copywriting_ab_assignments';
@@ -21,50 +21,83 @@ class ABTesting {
   }
 
   private loadUserAssignments(): void {
-    try {
-      const stored = localStorage.getItem(this.storageKey);
-      if (stored) {
-        this.userAssignments = new Map(JSON.parse(stored));
-      }
-    } catch (error) {
-      console.error('Error loading A/B test assignments:', error);
+    if (typeof window === 'undefined') return;
+
+    const storedAssignments = localStorage.getItem(this.storageKey);
+    if (storedAssignments) {
+      this.userAssignments = new Map(JSON.parse(storedAssignments));
     }
   }
 
   private saveUserAssignments(): void {
-    try {
-      localStorage.setItem(
-        this.storageKey,
-        JSON.stringify(Array.from(this.userAssignments.entries()))
-      );
-    } catch (error) {
-      console.error('Error saving A/B test assignments:', error);
-    }
+    if (typeof window === 'undefined') return;
+
+    localStorage.setItem(
+      this.storageKey,
+      JSON.stringify(Array.from(this.userAssignments.entries()))
+    );
   }
 
-  public createTest(config: ABTestConfig): void {
-    if (this.tests.has(config.testId)) {
-      throw new Error(`Test with ID ${config.testId} already exists`);
+  public createTest(config: ABTestConfig): string {
+    const testId = uuidv4();
+    const test: ABTest = {
+      id: testId,
+      variants: config.variants,
+      weights: config.weights || config.variants.map(() => 1 / config.variants.length),
+      startDate: Date.now(),
+      status: 'running',
+    };
+
+    // Select initial variant
+    const randomValue = Math.random();
+    let cumulativeWeight = 0;
+    let initialVariant = test.variants[0]; // Default to first variant
+
+    // Since we set weights in the test object above, we can safely assert it's not undefined
+    const weights = test.weights!;
+    for (let i = 0; i < test.variants.length; i++) {
+      cumulativeWeight += weights[i];
+      if (randomValue <= cumulativeWeight) {
+        initialVariant = test.variants[i];
+        break;
+      }
     }
 
-    this.tests.set(config.testId, {
-      ...config,
-      weights: config.weights || config.variants.map(() => 1 / config.variants.length),
-    });
+    // Save the test and initial variant assignment
+    this.tests.set(testId, test);
+    this.userAssignments.set(testId, initialVariant);
+    this.saveUserAssignments();
 
-    this.results.set(config.testId, {
-      testId: config.testId,
-      variant: '',
+    this.results.set(testId, {
+      testId,
+      variant: initialVariant,
       metrics: {
         impressions: 0,
         conversions: 0,
         clickThroughRate: 0,
+        variantMetrics: {},
       },
+      startTime: test.startDate,
+      status: 'running',
     });
+
+    // Track the variant assignment
+    AnalyticsTracker.getInstance().trackCopyVariant(testId, initialVariant);
+
+    return testId;
+  }
+
+  public getTest(testId: string): ABTest | undefined {
+    return this.tests.get(testId);
+  }
+
+  public getTestResults(testId: string): ABTestResult | undefined {
+    return this.results.get(testId);
   }
 
   public getVariant(testId: string): string {
-    if (!this.tests.has(testId)) {
+    const test = this.tests.get(testId);
+    if (!test) {
       throw new Error(`Test with ID ${testId} not found`);
     }
 
@@ -73,7 +106,6 @@ class ABTesting {
       return this.userAssignments.get(testId)!;
     }
 
-    const test = this.tests.get(testId)!;
     const randomValue = Math.random();
     let cumulativeWeight = 0;
 
@@ -95,48 +127,77 @@ class ABTesting {
   }
 
   public trackConversion(testId: string): void {
-    if (!this.results.has(testId)) {
-      return;
-    }
+    const results = this.results.get(testId);
+    if (!results) return;
 
-    const result = this.results.get(testId)!;
-    result.metrics.conversions++;
-    result.metrics.clickThroughRate = 
-      result.metrics.conversions / result.metrics.impressions;
+    const variant = this.userAssignments.get(testId);
+    if (!variant) return;
+
+    // Update overall metrics
+    results.metrics.conversions++;
+    results.metrics.clickThroughRate = 
+      results.metrics.conversions / results.metrics.impressions;
+
+    // Update variant-specific metrics
+    const variantMetrics = results.metrics.variantMetrics[variant] || {
+      impressions: 0,
+      conversions: 0,
+    };
+    variantMetrics.conversions++;
+    results.metrics.variantMetrics[variant] = variantMetrics;
 
     AnalyticsTracker.getInstance().trackEvent({
       eventName: 'ab_test_conversion',
       properties: {
         testId,
-        variant: this.userAssignments.get(testId),
+        variant,
       },
     });
   }
 
   public trackImpression(testId: string): void {
-    if (!this.results.has(testId)) {
-      return;
-    }
+    const results = this.results.get(testId);
+    if (!results) return;
 
-    const result = this.results.get(testId)!;
-    result.metrics.impressions++;
-    result.metrics.clickThroughRate = 
-      result.metrics.conversions / result.metrics.impressions;
+    const variant = this.userAssignments.get(testId);
+    if (!variant) return;
+
+    // Update overall metrics
+    results.metrics.impressions++;
+    results.metrics.clickThroughRate = 
+      results.metrics.conversions / results.metrics.impressions;
+
+    // Update variant-specific metrics
+    const variantMetrics = results.metrics.variantMetrics[variant] || {
+      impressions: 0,
+      conversions: 0,
+    };
+    variantMetrics.impressions++;
+    results.metrics.variantMetrics[variant] = variantMetrics;
   }
 
-  public getTestResults(testId: string): ABTestResult | undefined {
-    return this.results.get(testId);
+  public endTest(testId: string): void {
+    const test = this.tests.get(testId);
+    if (!test) return;
+
+    test.status = 'completed';
+    test.endDate = Date.now();
+
+    const results = this.results.get(testId);
+    if (results) {
+      results.status = 'completed';
+      results.endTime = test.endDate;
+    }
   }
 
   public getAllTestResults(): ABTestResult[] {
-    return Array.from(this.results.values());
-  }
-
-  public clearTest(testId: string): void {
-    this.tests.delete(testId);
-    this.results.delete(testId);
-    this.userAssignments.delete(testId);
-    this.saveUserAssignments();
+    return Array.from(this.results.values()).map(result => ({
+      ...result,
+      testId: Array.from(this.results.entries())
+        .find(([, r]) => r === result)?.[0] || '',
+      variant: this.userAssignments.get(Array.from(this.results.entries())
+        .find(([, r]) => r === result)?.[0] || '') || ''
+    }));
   }
 }
 

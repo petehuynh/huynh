@@ -1,10 +1,21 @@
 import { parse } from '@babel/parser';
 import traverse from '@babel/traverse';
-import type { CopyReplacementRule } from '../types';
+import type { 
+  CopyReplacementRule, 
+  CopyRefinerInterface, 
+  ABTestReport,
+  RuleUpdateStrategy 
+} from '../types';
 
-class CopyRefiner {
+class CopyRefiner implements CopyRefinerInterface {
   private static instance: CopyRefiner;
   private rules: CopyReplacementRule[] = [];
+  private ruleUpdateHistory: Array<{
+    timestamp: number;
+    ruleId: string;
+    change: string;
+    testId: string;
+  }> = [];
 
   private constructor() {}
 
@@ -19,15 +30,120 @@ class CopyRefiner {
     this.rules = rules.sort((a, b) => (b.priority || 0) - (a.priority || 0));
   }
 
-  public async loadRulesFromFile(path: string): Promise<void> {
+  public getRules(): CopyReplacementRule[] {
+    return [...this.rules];
+  }
+
+  public async loadRulesFromFile(filePath: string): Promise<void> {
     try {
-      const response = await fetch(path);
+      const response = await fetch(filePath);
       const rules = await response.json();
       this.loadRules(rules);
     } catch (error) {
       console.error('Error loading copy replacement rules:', error);
       throw error;
     }
+  }
+
+  public updateRulesFromABTestResults(
+    testResults: ABTestReport,
+    strategy: RuleUpdateStrategy = {
+      confidenceThreshold: 0.95,
+      impactMultiplier: 1.5,
+      maxRuleModifications: 3
+    }
+  ): void {
+    if (!testResults.variants || testResults.variants.length === 0) {
+      console.warn('No variants found in test results');
+      return;
+    }
+
+    // Find the best performing variant
+    const bestVariant = testResults.variants.reduce((best, current) => {
+      return current.conversionRate > best.conversionRate ? current : best;
+    });
+
+    // Only proceed if the best variant shows significant improvement
+    if (bestVariant.significance < strategy.confidenceThreshold) {
+      console.log('No statistically significant improvements found');
+      return;
+    }
+
+    // Find existing rules that might be affected
+    const affectedRules = this.rules.filter(rule => 
+      testResults.variants.some(variant => 
+        variant.text.match(new RegExp(rule.pattern, 'gi'))
+      )
+    );
+
+    let modificationsCount = 0;
+
+    // Update or create rules based on the test results
+    for (const rule of affectedRules) {
+      if (modificationsCount >= strategy.maxRuleModifications) break;
+
+      const currentPattern = new RegExp(rule.pattern, 'gi');
+      if (bestVariant.text.match(currentPattern)) {
+        // Update existing rule
+        const oldReplacement = rule.replacement;
+        rule.replacement = bestVariant.text;
+        rule.priority = (rule.priority || 0) + 1;
+
+        this.logRuleUpdate({
+          ruleId: rule.pattern,
+          change: `Updated replacement from "${oldReplacement}" to "${bestVariant.text}"`,
+          testId: testResults.testId
+        });
+
+        modificationsCount++;
+      }
+    }
+
+    // Create new rule if no existing rules were updated
+    if (modificationsCount === 0 && this.shouldCreateNewRule(bestVariant)) {
+      const newRule: CopyReplacementRule = {
+        pattern: this.generatePatternFromText(bestVariant.text),
+        replacement: bestVariant.text,
+        priority: 1
+      };
+
+      this.rules.push(newRule);
+      this.logRuleUpdate({
+        ruleId: newRule.pattern,
+        change: `Created new rule with replacement "${bestVariant.text}"`,
+        testId: testResults.testId
+      });
+    }
+
+    // Re-sort rules by priority
+    this.rules.sort((a, b) => (b.priority || 0) - (a.priority || 0));
+  }
+
+  private shouldCreateNewRule(variant: ABTestReport['variants'][0]): boolean {
+    return variant.conversionRate > 0.1 && variant.impressions > 100;
+  }
+
+  private generatePatternFromText(text: string): string {
+    // Create a flexible pattern that matches similar phrases
+    return text
+      .replace(/[.*+?^${}()|[\]\\]/g, '\\$&') // Escape regex special characters
+      .replace(/\s+/g, '\\s+') // Make whitespace flexible
+      .replace(/[A-Za-z]+/g, '\\w+'); // Make words flexible
+  }
+
+  private logRuleUpdate(update: { 
+    ruleId: string; 
+    change: string; 
+    testId: string; 
+  }): void {
+    this.ruleUpdateHistory.push({
+      ...update,
+      timestamp: Date.now()
+    });
+  }
+
+  public getRuleUpdateHistory(): typeof this.ruleUpdateHistory {
+    return [...this.ruleUpdateHistory];
   }
 
   public refineText(text: string, context: string[] = []): string {
@@ -95,10 +211,6 @@ class CopyRefiner {
       console.error('Error refining component:', error);
       return code;
     }
-  }
-
-  public getRules(): CopyReplacementRule[] {
-    return [...this.rules];
   }
 
   public clearRules(): void {

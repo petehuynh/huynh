@@ -28,7 +28,7 @@ const ABTestWrapper: React.FC<ABTestWrapperProps> = ({
 
     // Track impression
     abTesting.trackImpression(testId);
-  }, [testId, controlText, variantText]);
+  }, [testId, controlText, variantText, abTesting]);
 
   const handleInteraction = () => {
     abTesting.trackConversion(testId);

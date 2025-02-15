@@ -1,77 +1,74 @@
 # Copywriting Analytics Package
 
-A self-contained, reusable npm package that automates copy refinement, tracks analytics, and integrates A/B testing capabilities across different websites.
+A comprehensive analytics and optimization toolkit for tracking, analyzing, and refining website copy and content performance.
 
 ## Features
 
-- 🔄 Automated copy refinement based on predefined rules
-- 📊 Built-in analytics tracking with multiple provider support
-- 🔬 Integrated A/B testing capabilities
-- 🎯 Pre-built UI components with analytics tracking
-- ♿ Accessibility-focused components
-- 🎨 TailwindCSS styling support
+- **Advanced Analytics Tracking**
+  - Multi-provider support (Google Analytics, Mixpanel, custom)
+  - Detailed event tracking
+  - Performance metrics collection
+  - User engagement monitoring
+
+- **A/B Testing**
+  - Easy test creation and management
+  - Variant performance tracking
+  - Statistical significance analysis
+  - Automated recommendations
+
+- **Copy Refinement**
+  - Rule-based text optimization
+  - Context-aware replacements
+  - Component-level refinements
+  - Style guide generation
+
+- **Privacy Management**
+  - GDPR and CCPA compliance
+  - Granular consent management
+  - Data minimization
+  - Configurable privacy modes
+
+- **Reporting**
+  - Comprehensive performance reports
+  - A/B test analysis
+  - Copy style guides
+  - Custom metric tracking
 
 ## Installation
 
 ```bash
-npm install copywriting-analytics-package
+npm install huynh
+# or
+yarn add huynh
 ```
 
 ## Quick Start
 
-```tsx
-import { initializeCopyAnalytics, ButtonWithAnalytics, ABTestWrapper } from 'copywriting-analytics-package';
+```typescript
+import { initializeCopyAnalytics } from 'huynh';
 
-// Initialize the package
+// Initialize with basic configuration
 await initializeCopyAnalytics({
-  analyticsProvider: 'gtag', // or 'mixpanel'
-  rulesPath: '/path/to/copyReplacementRules.json',
-  enableABTesting: true,
+  analyticsProvider: 'gtag',
   providerConfig: {
-    apiKey: 'your-analytics-api-key',
+    apiKey: 'YOUR_GA_KEY',
   },
+  enableABTesting: true,
+  privacyMode: 'strict',
+  consentRequired: true,
 });
-
-// Use the pre-built components
-function LandingPage() {
-  return (
-    <div>
-      <ABTestWrapper
-        testId="hero-cta"
-        controlText="Get Started"
-        variantText="Start Your Journey"
-      >
-        {(selectedText) => (
-          <ButtonWithAnalytics
-            label={selectedText}
-            onClick={() => console.log('CTA clicked')}
-            testId="hero-button"
-          />
-        )}
-      </ABTestWrapper>
-    </div>
-  );
-}
 ```
 
-## Components
+## Usage Examples
 
-### ButtonWithAnalytics
+### Analytics Tracking
 
-A button component that automatically tracks click events and supports A/B testing.
+```typescript
+import { AnalyticsTracker } from 'huynh';
 
-```tsx
-<ButtonWithAnalytics
-  label="Get Started"
-  onClick={() => {}}
-  className="custom-class"
-  testId="unique-id"
-  variant="variant-name"
-  disabled={false}
-  aria-label="Accessible label"
-/>
-```
+const analytics = AnalyticsTracker.getInstance();
 
+<<<<<<< HEAD
 ### ABTestWrapper
 
 A wrapper component that manages A/B test variants and tracks conversions.
@@ -185,36 +182,142 @@ await initializeCopyAnalytics({
   analyticsProvider: 'mixpanel',
   providerConfig: {
     apiKey: 'your-mixpanel-token',
+=======
+// Track custom events
+analytics.trackEvent({
+  eventName: 'button_click',
+  properties: {
+    buttonId: 'cta-main',
+    location: 'hero-section',
+>>>>>>> e1427f2b (Fix error with npm run build and run dev)
   },
 });
 ```
 
-## A/B Testing
+### A/B Testing
 
-The package includes a built-in A/B testing system that:
+```typescript
+import { ABTesting } from 'huynh';
 
-- Manages variant assignment
-- Tracks impressions and conversions
-- Supports multiple concurrent tests
-- Persists user assignments
+const abTesting = ABTesting.getInstance();
 
-## TypeScript Support
+// Create a new test
+const testId = abTesting.createTest({
+  variants: [
+    'Sign up now - it\'s free!',
+    'Start your free trial today',
+    'Join thousands of happy users',
+  ],
+});
 
-The package is written in TypeScript and includes full type definitions.
+// Get variant for current user
+const variant = abTesting.getVariant(testId);
+
+// Track conversions
+abTesting.trackConversion(testId);
+```
+
+### Copy Refinement
+
+```typescript
+import { CopyRefiner } from 'huynh';
+
+const copyRefiner = CopyRefiner.getInstance();
+
+// Load rules
+await copyRefiner.loadRulesFromFile('/path/to/rules.json');
+
+// Refine text
+const refinedText = copyRefiner.refineText(
+  'Click here to learn more!',
+  ['cta', 'landing-page']
+);
+```
+
+### Privacy Management
+
+```typescript
+import { ConsentManager } from 'huynh';
+
+const consentManager = ConsentManager.getInstance();
+
+// Render consent banner
+const ConsentBanner = () => {
+  return consentManager.renderConsentBanner({
+    onAccept: (types) => {
+      // Handle consent acceptance
+    },
+    onDecline: () => {
+      // Handle consent rejection
+    },
+    requiredTypes: ['analytics'],
+    position: 'bottom',
+    theme: 'light',
+  });
+};
+```
+
+### Reporting
+
+```typescript
+import { ReportGenerator } from 'huynh';
+
+const reportGenerator = ReportGenerator.getInstance();
+
+// Generate A/B test report
+const testReport = await reportGenerator.generateABTestReport('test-id');
+
+// Generate copy style guide
+const styleGuide = await reportGenerator.generateCopyStyleGuide();
+
+// Export performance metrics
+const metrics = await reportGenerator.exportPerformanceMetrics();
+```
+
+## Configuration Options
+
+```typescript
+interface CopyAnalyticsConfig {
+  // Core Configuration
+  analyticsProvider: 'gtag' | 'mixpanel' | 'custom';
+  providerConfig?: {
+    apiKey?: string;
+    projectId?: string;
+    [key: string]: any;
+  };
+  
+  // Privacy Settings
+  privacyMode?: 'strict' | 'default' | 'permissive';
+  consentRequired?: boolean;
+  
+  // A/B Testing
+  enableABTesting?: boolean;
+  abTestConfig?: {
+    autoTerminate?: boolean;
+    significanceThreshold?: number;
+    maxTestDuration?: number;
+  };
+  
+  // Reporting
+  reportingOptions?: {
+    generateStyleGuide?: boolean;
+    reportFrequency?: 'daily' | 'weekly' | 'monthly';
+    reportChannels?: ('email' | 'webhook' | 'console')[];
+  };
+}
+```
 
 ## Contributing
 
-1. Fork the repository
-2. Create your feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a new Pull Request
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
 ## License
 
-MIT
+MIT License - see [LICENSE](LICENSE) for details.
 
 ## Support
 
-For issues and feature requests, please use the GitHub issue tracker.
+- Documentation: [https://docs.huynh.dev](https://docs.huynh.dev)
+- Issues: [GitHub Issues](https://github.com/your-org/huynh/issues)
+- Community: [Discord](https://discord.gg/huynh)
 ```
