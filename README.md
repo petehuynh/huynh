@@ -1,90 +1,169 @@
-# Huynh
+# Copywriting Analytics Package
 
-AI-driven UI optimization package for React applications.
+A self-contained, reusable npm package that automates copy refinement, tracks analytics, and integrates A/B testing capabilities across different websites.
 
 ## Features
 
-- 🤖 AI-powered UI optimization
-- 🔄 Automated A/B testing
-- 🛡️ Built-in rollback system
-- 📊 Performance metrics tracking
-- 💰 Budget management
-- 🔒 Type-safe development
+- 🔄 Automated copy refinement based on predefined rules
+- 📊 Built-in analytics tracking with multiple provider support
+- 🔬 Integrated A/B testing capabilities
+- 🎯 Pre-built UI components with analytics tracking
+- ♿ Accessibility-focused components
+- 🎨 TailwindCSS styling support
 
 ## Installation
 
 ```bash
-npm install huynh
+npm install copywriting-analytics-package
 ```
 
 ## Quick Start
 
-```typescript
-import { createRollbackSystem } from 'huynh';
+```tsx
+import { initializeCopyAnalytics, ButtonWithAnalytics, ABTestWrapper } from 'copywriting-analytics-package';
 
-// Initialize the rollback system
-const rollback = createRollbackSystem({
-  maxHistoryVersions: 5,
-  autoRollbackThreshold: 0.1, // 10% error rate
-  backupInterval: 60 // 60 minutes
+// Initialize the package
+await initializeCopyAnalytics({
+  analyticsProvider: 'gtag', // or 'mixpanel'
+  rulesPath: '/path/to/copyReplacementRules.json',
+  enableABTesting: true,
+  providerConfig: {
+    apiKey: 'your-analytics-api-key',
+  },
 });
 
-// Take a snapshot of your application state
-await rollback.takeSnapshot(currentState);
-
-// Restore a previous version if needed
-await rollback.restoreSnapshot(version);
+// Use the pre-built components
+function LandingPage() {
+  return (
+    <div>
+      <ABTestWrapper
+        testId="hero-cta"
+        controlText="Get Started"
+        variantText="Start Your Journey"
+      >
+        {(selectedText) => (
+          <ButtonWithAnalytics
+            label={selectedText}
+            onClick={() => console.log('CTA clicked')}
+            testId="hero-button"
+          />
+        )}
+      </ABTestWrapper>
+    </div>
+  );
+}
 ```
 
-## Development
+## Components
 
-### Prerequisites
+### ButtonWithAnalytics
 
-- Node.js >= 16.x
-- npm >= 7.x
+A button component that automatically tracks click events and supports A/B testing.
 
-### Setup
-
-1. Clone the repository:
-```bash
-git clone https://github.com/username/huynh.git
-cd huynh
+```tsx
+<ButtonWithAnalytics
+  label="Get Started"
+  onClick={() => {}}
+  className="custom-class"
+  testId="unique-id"
+  variant="variant-name"
+  disabled={false}
+  aria-label="Accessible label"
+/>
 ```
 
-2. Install dependencies:
-```bash
-npm install
+### ABTestWrapper
+
+A wrapper component that manages A/B test variants and tracks conversions.
+
+```tsx
+<ABTestWrapper
+  testId="unique-test-id"
+  controlText="Original Text"
+  variantText="Test Variant"
+>
+  {(selectedText) => (
+    // Your component using the selected text
+  )}
+</ABTestWrapper>
 ```
 
-3. Run tests:
-```bash
-npm test
+### TrackVisibility
+
+A component that tracks when elements become visible in the viewport.
+
+```tsx
+<TrackVisibility
+  onVisible={() => console.log('Element is visible')}
+  threshold={0.5}
+  testId="visibility-tracker"
+>
+  <div>Content to track</div>
+</TrackVisibility>
 ```
 
-### Available Scripts
+## Copy Replacement Rules
 
-- `npm run build` - Build the package
-- `npm test` - Run tests with coverage
-- `npm run lint` - Run ESLint
-- `npm run typecheck` - Run TypeScript type checking
+Create a JSON file with your copy replacement rules:
+
+```json
+{
+  "rules": [
+    {
+      "pattern": "click here",
+      "replacement": "get started",
+      "context": ["cta"],
+      "priority": 1
+    }
+  ]
+}
+```
+
+## Analytics Integration
+
+The package supports multiple analytics providers:
+
+- Google Analytics (gtag)
+- Mixpanel
+- Custom providers
+
+Configure your analytics provider during initialization:
+
+```tsx
+await initializeCopyAnalytics({
+  analyticsProvider: 'mixpanel',
+  providerConfig: {
+    apiKey: 'your-mixpanel-token',
+  },
+});
+```
+
+## A/B Testing
+
+The package includes a built-in A/B testing system that:
+
+- Manages variant assignment
+- Tracks impressions and conversions
+- Supports multiple concurrent tests
+- Persists user assignments
+
+## TypeScript Support
+
+The package is written in TypeScript and includes full type definitions.
 
 ## Contributing
 
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+2. Create your feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a new Pull Request
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Security
-
-For security concerns, please open an issue or contact the maintainers directly.
+MIT
 
 ## Support
 
-For support, please open an issue in the GitHub repository.
+For issues and feature requests, please use the GitHub issue tracker.
 ```

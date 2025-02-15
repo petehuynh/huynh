@@ -1,0 +1,40 @@
+{
+  "rules": [
+    {
+      "pattern": "click here",
+      "replacement": "get started",
+      "context": ["cta"],
+      "priority": 1
+    },
+    {
+      "pattern": "learn more",
+      "replacement": "discover benefits",
+      "context": ["cta"],
+      "priority": 1
+    },
+    {
+      "pattern": "sign up",
+      "replacement": "start free trial",
+      "context": ["cta"],
+      "priority": 2
+    },
+    {
+      "pattern": "our solution",
+      "replacement": "your personalized solution",
+      "context": ["marketing"],
+      "priority": 1
+    },
+    {
+      "pattern": "contact us",
+      "replacement": "get expert help",
+      "context": ["support"],
+      "priority": 1
+    },
+    {
+      "pattern": "features",
+      "replacement": "powerful capabilities",
+      "context": ["marketing"],
+      "priority": 1
+    }
+  ]
+} 
