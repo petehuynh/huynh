@@ -126,6 +126,33 @@ Features:
 - Auto-refreshing data every 2 seconds
 - Responsive layout with Tailwind CSS
 
+### Running the Dashboard Locally
+
+To start the development server and view the dashboard:
+
+```bash
+# If you're using npm
+npm run dev
+
+# If you're using yarn
+yarn dev
+
+# If you're using pnpm
+pnpm dev
+```
+
+The dashboard will be available at `http://localhost:3000` by default. You can access it through your web browser.
+
+For production deployment:
+
+```bash
+# Build the application
+npm run build
+
+# Start the production server
+npm start
+```
+
 ## Copy Replacement Rules
 
 Create a JSON file with your copy replacement rules:
